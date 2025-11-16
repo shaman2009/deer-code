@@ -26,6 +26,8 @@ models:
   #       type: auto
 
 tools:
+  tavily:
+    api_key: $TAVILY_API_KEY
   mcp_servers:
     context7:
       transport: 'streamable_http'

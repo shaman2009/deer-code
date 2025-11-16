@@ -5,6 +5,7 @@
     "PROJECT_ROOT": "/your/project/path"
   },
   "graphs": {
-    "coding_agent": "deer_code.agents.coding_agent:create_coding_agent_for_debug"
+    "coding_agent": "deer_code.agents.coding_agent:create_coding_agent_for_debug",
+    "research_agent": "deer_code.agents.research_agent:create_research_agent_for_debug"
   }
 }
