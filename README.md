@@ -22,8 +22,8 @@ DeerCode is written in Python and designed to be easy to set up and use. Follow 
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/bytedance/deer-flow.git
-   cd deer-flow
+   git clone https://github.com/shaman2009/deer-code.git
+   cd deer-code
    ```
 
 2. **Install dependencies:**
