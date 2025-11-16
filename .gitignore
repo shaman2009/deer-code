@@ -17,3 +17,8 @@ wheels/
 
 # Config
 config.yaml
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
