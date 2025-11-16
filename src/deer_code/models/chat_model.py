@@ -23,6 +23,11 @@ def init_chat_model():
     rest_settings = settings.copy()
     del rest_settings["model"]
     del rest_settings["api_key"]
+
+    # Handle api_base -> base_url conversion for OpenAI-compatible models
+    if "api_base" in rest_settings and settings.get("type") not in ["deepseek", "doubao"]:
+        rest_settings["base_url"] = rest_settings.pop("api_base")
+
     if settings.get("type") == "deepseek" or settings.get("type") == "doubao":
         del rest_settings["type"]
         model = ChatDeepSeek(model=model, api_key=api_key, **rest_settings)
