@@ -3,7 +3,7 @@ import os
 from langchain.agents import create_agent
 from langchain.tools import BaseTool
 from langgraph.checkpoint.base import RunnableConfig
-from langgraph.graph.state import MessagesState
+from langgraph.graph import MessagesState
 
 from deer_code.models import init_chat_model
 from deer_code.project import project
