@@ -214,6 +214,31 @@ class TestTavilySearchTool:
                 mock_client_class.assert_called_once_with(api_key=mock_tavily_api_key)
                 assert "## Search Results" in result
 
+    def test_api_key_env_var_expansion(
+        self,
+        mock_tool_runtime,
+        mock_tavily_api_key,
+        sample_tavily_response,
+    ):
+        """Test that API key with $ENV_VAR syntax is expanded correctly."""
+        with patch("deer_code.tools.search.tavily_search.get_config_section") as mock_config:
+            # Config returns "$TAVILY_API_KEY" which should be expanded
+            mock_config.return_value = "$TAVILY_API_KEY"
+
+            with patch("deer_code.tools.search.tavily_search.TavilyClient") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client.search.return_value = sample_tavily_response
+                mock_client_class.return_value = mock_client
+
+                result = tavily_search_tool.func(
+                    runtime=mock_tool_runtime,
+                    query="test",
+                )
+
+                # Verify TavilyClient was initialized with expanded env API key
+                mock_client_class.assert_called_once_with(api_key=mock_tavily_api_key)
+                assert "## Search Results" in result
+
     def test_tavily_client_exception(
         self,
         mock_tool_runtime,

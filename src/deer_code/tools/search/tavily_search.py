@@ -30,6 +30,9 @@ def tavily_search_tool(
     if not api_key:
         # Fallback to environment variable
         api_key = os.getenv("TAVILY_API_KEY")
+    elif api_key.startswith("$"):
+        # Expand environment variable from config
+        api_key = os.getenv(api_key[1:])
 
     if not api_key:
         return "Error: Tavily API key not found. Please set it in config.yaml under tools.tavily.api_key or set the TAVILY_API_KEY environment variable."
