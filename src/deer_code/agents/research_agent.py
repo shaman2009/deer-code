@@ -3,12 +3,13 @@ import os
 from langchain.agents import create_agent
 from langchain.tools import BaseTool
 from langgraph.checkpoint.base import RunnableConfig
-from langgraph.graph import MessagesState
 
 from deer_code.models import init_chat_model
 from deer_code.project import project
 from deer_code.prompts import apply_prompt_template
-from deer_code.tools import tavily_search_tool
+from deer_code.tools import tavily_search_tool, todo_write_tool
+
+from .state import ResearchAgentState
 
 
 def create_research_agent(plugin_tools: list[BaseTool] = [], **kwargs):
@@ -25,10 +26,11 @@ def create_research_agent(plugin_tools: list[BaseTool] = [], **kwargs):
         model=init_chat_model(),
         tools=[
             tavily_search_tool,
+            todo_write_tool,
             *plugin_tools,
         ],
         system_prompt=apply_prompt_template("research_agent"),
-        state_schema=MessagesState,
+        state_schema=ResearchAgentState,
         name="research_agent",
         **kwargs,
     )

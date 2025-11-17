@@ -6,3 +6,7 @@ from deer_code.tools.todo.types import TodoItem
 
 class CodingAgentState(MessagesState):
     todos: list[TodoItem] = Field(default_factory=list)
+
+
+class ResearchAgentState(MessagesState):
+    todos: list[TodoItem] = Field(default_factory=list)
