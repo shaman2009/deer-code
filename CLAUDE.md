@@ -63,7 +63,7 @@ deer-code/
 ├── src/deer_code/              # Main source code
 │   ├── agents/                 # Agent implementations
 │   │   ├── coding_agent.py     # Main coding agent (bash, edit, grep, ls, tree, todo)
-│   │   ├── research_agent.py   # Research agent (Tavily search)
+│   │   ├── research_agent.py   # Research agent (Tavily search + TodoListMiddleware)
 │   │   └── state.py            # CodingAgentState (MessagesState + todos)
 │   ├── cli/                    # Textual TUI components
 │   │   ├── app.py              # ConsoleApp - main TUI application
@@ -123,12 +123,12 @@ ConsoleApp (Textual TUI)
     ↓
 Agents (LangGraph State Graphs)
     ├── CodingAgent → bash, text_editor, grep, ls, tree, todo_write, MCP tools
-    └── ResearchAgent → tavily_search, MCP tools
+    └── ResearchAgent → tavily_search, write_todos (via TodoListMiddleware), MCP tools
 ```
 
 **Two Agent Types**:
 1. **CodingAgent** (`agents/coding_agent.py`) - Primary agent for code analysis, editing, and execution
-2. **ResearchAgent** (`agents/research_agent.py`) - Specialized agent for web research using Tavily
+2. **ResearchAgent** (`agents/research_agent.py`) - Specialized agent for web research using Tavily with built-in todo list tracking via TodoListMiddleware
 
 ### Message Flow (Critical to Understand)
 
@@ -155,9 +155,10 @@ Agents (LangGraph State Graphs)
 
 *ResearchAgent* (`research_agent.py`):
 - Specialized for web research and information gathering
-- State schema: `MessagesState` (no todos field)
+- State schema: Managed by `TodoListMiddleware` (PlanningState with todos field)
 - System prompt from `prompts/templates/research_agent.md`
-- Tools: tavily_search, + MCP tools
+- Middleware: `TodoListMiddleware` for task planning and tracking
+- Tools: tavily_search, write_todos (from middleware), + MCP tools
 
 **Tool System** (`tools/`):
 
@@ -367,6 +368,74 @@ elif tool_name == "your_tool":
 - Add type hints for all parameters
 - Consider file filtering with DEFAULT_IGNORE_PATTERNS for file operations
 
+## Using Agent Middleware
+
+**LangChain Agent Middleware** provides a powerful way to extend agent capabilities without modifying core agent logic. Middleware can add tools, manage state, and modify agent behavior.
+
+### TodoListMiddleware (Used in ResearchAgent)
+
+The `TodoListMiddleware` from LangChain provides built-in task planning and tracking capabilities.
+
+**Features**:
+- Automatically adds `write_todos` tool to the agent
+- Manages `PlanningState` (extends MessagesState with todos field)
+- Enables agents to break down complex tasks into trackable steps
+- Todos persist across agent turns for continuous task tracking
+
+**Usage Example**:
+
+```python
+from langchain.agents import create_agent
+from langchain.agents.middleware.todo import TodoListMiddleware
+
+def create_my_agent(plugin_tools: list[BaseTool] = [], **kwargs):
+    return create_agent(
+        model=init_chat_model(),
+        tools=[
+            # your tools here
+            *plugin_tools,
+        ],
+        system_prompt="...",
+        middleware=[TodoListMiddleware()],  # Add todo capabilities
+        name="my_agent",
+        **kwargs,
+    )
+```
+
+**Customization**:
+```python
+TodoListMiddleware(
+    system_prompt="Custom instructions for todo usage...",
+    tool_description="Custom description for write_todos tool..."
+)
+```
+
+**State Access**:
+```python
+# After invoking the agent
+result = await agent.ainvoke({"messages": [HumanMessage("Task...")]})
+
+# Access todos from state
+if "todos" in result:
+    for todo in result["todos"]:
+        print(todo)  # Todo items tracked by the agent
+```
+
+**Other Available Middleware** (from LangChain):
+- `SummarizationMiddleware` - Automatic conversation summarization
+- `HumanInTheLoopMiddleware` - Human approval for tool calls
+- `ModelCallLimitMiddleware` - Limit model calls
+- `ToolCallLimitMiddleware` - Limit tool executions
+- `ShellToolMiddleware` - Persistent shell sessions
+- `FilesystemFileSearchMiddleware` - File search capabilities
+- And more (see LangChain middleware documentation)
+
+**Best Practices**:
+- Use middleware for cross-cutting concerns (state management, limits, monitoring)
+- Prefer middleware over `state_schema` parameter when possible (better organization)
+- Multiple middleware can be combined: `middleware=[Middleware1(), Middleware2()]`
+- Middleware-managed state is automatically integrated with agent state
+
 ## Modifying System Prompts
 
 Edit `prompts/templates/coding_agent.md` (Jinja2 template). Variables are passed via `apply_prompt_template("coding_agent", PROJECT_ROOT=...)`. The template includes:
@@ -432,8 +501,8 @@ Note: The TUI currently uses CodingAgent by default. ResearchAgent can be integr
 - MCP tools are loaded asynchronously on startup
 
 **State Management**:
-- CodingAgent state includes `messages` + `todos`
-- ResearchAgent state only includes `messages`
+- CodingAgent state includes `messages` + `todos` (via CodingAgentState)
+- ResearchAgent state includes `messages` + `todos` (via TodoListMiddleware's PlanningState)
 - All state managed by LangGraph with `thread_id`
 - Bash terminal state persisted in `keep_alive_terminal` instance
 

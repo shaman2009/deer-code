@@ -1,9 +1,9 @@
 import os
 
 from langchain.agents import create_agent
+from langchain.agents.middleware.todo import TodoListMiddleware
 from langchain.tools import BaseTool
 from langgraph.checkpoint.base import RunnableConfig
-from langgraph.graph import MessagesState
 
 from deer_code.models import init_chat_model
 from deer_code.project import project
@@ -12,14 +12,14 @@ from deer_code.tools import tavily_search_tool
 
 
 def create_research_agent(plugin_tools: list[BaseTool] = [], **kwargs):
-    """Create a research agent.
+    """Create a research agent with todo list capabilities.
 
     Args:
         plugin_tools: Additional tools to add to the agent.
         **kwargs: Additional keyword arguments to pass to the agent.
 
     Returns:
-        The research agent.
+        The research agent with TodoListMiddleware enabled.
     """
     return create_agent(
         model=init_chat_model(),
@@ -28,7 +28,7 @@ def create_research_agent(plugin_tools: list[BaseTool] = [], **kwargs):
             *plugin_tools,
         ],
         system_prompt=apply_prompt_template("research_agent"),
-        state_schema=MessagesState,
+        middleware=[TodoListMiddleware()],
         name="research_agent",
         **kwargs,
     )
