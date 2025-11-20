@@ -2,20 +2,52 @@
 
 import os
 import sys
-from unittest.mock import MagicMock, patch
+import tempfile
+from unittest.mock import MagicMock, patch, mock_open
 
 import pytest
 from langchain.tools import ToolRuntime
+import yaml
 
 
-@pytest.fixture(scope="session", autouse=True)
-def mock_config_loading():
-    """Mock config loading for all tests to avoid requiring config.yaml."""
-    # Mock the config module's __config variable and load_config function
-    with patch("deer_code.config.config.__config", {}):
-        with patch("deer_code.config.config.load_config") as mock_load:
-            mock_load.return_value = {}
-            yield
+def pytest_sessionstart(session):
+    """Create a temporary config.yaml before tests start."""
+    # Create a minimal config.yaml for testing
+    # Use the same API key as mock_tavily_api_key fixture for consistency
+    minimal_config = {
+        "models": {
+            "chat_model": {
+                "model": "gpt-4",
+                "api_base": "https://api.openai.com/v1",
+                "api_key": "test_key",
+                "temperature": 0,
+                "max_tokens": 8192,
+            }
+        },
+        "tools": {
+            "tavily": {
+                "api_key": "test_tavily_api_key_123"  # Match the fixture value
+            }
+        },
+    }
+
+    # Write to config.yaml in the current directory
+    config_path = os.path.join(os.getcwd(), "config.yaml")
+    if not os.path.exists(config_path):
+        with open(config_path, "w") as f:
+            yaml.dump(minimal_config, f)
+        # Mark that we created it so we can clean up later
+        session.config._created_config = True
+    else:
+        session.config._created_config = False
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Clean up the temporary config.yaml after tests finish."""
+    if getattr(session.config, "_created_config", False):
+        config_path = os.path.join(os.getcwd(), "config.yaml")
+        if os.path.exists(config_path):
+            os.remove(config_path)
 
 
 @pytest.fixture
