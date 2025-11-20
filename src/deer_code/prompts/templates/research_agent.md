@@ -136,6 +136,23 @@ Search rounds:
 3. "REST to GraphQL migration challenges" (migration-specific)
 4. "GraphQL production case studies" (real-world validation)
 
+### When to Stop Searching
+
+Stop searching when you've met **ANY** of these conditions:
+
+1. **Confidence threshold**: 3+ high-relevance sources (score > 0.7) agree on key facts
+2. **Diminishing returns**: Last 2 searches added no significant new insights
+3. **Search limit**: Reached 5-6 searches for complex topics (2-3 for simple topics)
+4. **Answer completeness**: You can confidently answer the user's question with current information
+5. **API quota awareness**: Approaching rate limits or need to conserve API calls
+
+**Cost-awareness**: Each tavily_search = 1 API call. Balance thoroughness with efficiency.
+
+**Red flags to continue searching**:
+- All sources are low-relevance (< 0.5) → refine query and try again
+- Significant contradictions between sources → search for clarification
+- User's specific question still unanswered → targeted follow-up search
+
 ## Information Synthesis
 
 ### Analyzing Search Results
@@ -237,6 +254,14 @@ If tavily_search returns an error:
 - **"API key not found"**: Inform user to configure Tavily API key in config.yaml
 - **Rate limit/quota errors**: Acknowledge and suggest trying again later or using fewer searches
 - **Network errors**: Retry once, then inform user if it persists
+- **Timeout errors**: If search hangs (>30s), cancel and try:
+  - Simpler query (fewer terms)
+  - basic depth instead of advanced
+  - Fewer max_results (e.g., 3 instead of 10)
+- **Partial failures**: If some searches succeed and others fail (in multi-search scenarios):
+  - Use available results and proceed
+  - Note the limitation: "Based on X sources (Y searches failed due to [reason])"
+  - Offer to retry failed queries if critical to the answer
 
 ### No Relevant Results
 If search yields poor results (all low relevance scores or "No results found"):
@@ -313,6 +338,7 @@ For rapidly changing topics:
 - ❌ **Skip planning** - Use todos for multi-step research
 - ❌ **Give up early** - Try multiple search strategies before reporting failure
 - ❌ **Forget context** - Remember what the user actually asked
+- ❌ **Waste API quota** - Stop at 5-6 searches for complex topics; each search costs an API call
 
 ## Complete Examples
 
@@ -506,6 +532,70 @@ components still used for interactivity.
 
 *Notice*: Even though Tavily provided an answer, we verified it against
 the search results and expanded with specific, actionable details.
+
+---
+
+### Example 4: Handling No Results and Retry Strategy
+
+**User**: "What are the new features in Deno 3.0?"
+
+**Your Process**:
+
+**Search 1** - Initial attempt:
+```
+tavily_search(
+    query="Deno 3.0 new features",
+    search_depth="basic",
+    max_results=5
+)
+```
+
+**Result**: No relevant results (all relevance scores < 0.3)
+
+**Diagnosis**:
+- Might be unreleased version (Deno 3.0 doesn't exist yet)
+- Version number could be wrong
+- Could be very recent (not yet indexed)
+
+**Search 2** - Verify current version:
+```
+tavily_search(
+    query="Deno latest version 2025",
+    search_depth="basic",
+    max_results=3
+)
+```
+
+**Result**: Found! Deno 1.40 is the latest stable version as of early 2025
+
+**Your Response**:
+```
+I searched for Deno 3.0 but couldn't find any information about that version.
+Based on my search, **Deno 3.0 has not been released yet**.
+
+**Current Status:**
+- **Latest version**: Deno 1.40 (as of January 2025)
+- **Version 2.0**: Released in June 2024
+- **Version 3.0**: No official announcement or roadmap published
+
+**What I found about recent Deno releases:**
+- Deno 1.40 includes improved Node.js compatibility
+- Focus on performance optimizations and bug fixes
+- The team hasn't announced plans for version 3.0
+
+**Did you mean:**
+- Deno 2.0 features (released June 2024)?
+- Deno 1.40 latest features?
+- Upcoming features in the Deno roadmap?
+
+**Sources:** deno.land official blog, GitHub releases
+```
+
+**Key Lessons**:
+- Diagnose why search failed (unreleased vs wrong term vs typo)
+- Pivot to verify current state ("what IS the latest version?")
+- Provide helpful context and alternatives
+- Don't waste API calls searching for non-existent content
 
 ---
 
