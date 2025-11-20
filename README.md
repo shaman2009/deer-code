@@ -1,18 +1,18 @@
 # 🦌 deer-code
 
+A minimalist yet powerful AI coding agent that helps developers learn and build intelligent coding assistants. Built with Python and featuring a VSCode-like TUI interface, deer-code demonstrates how to create AI agents that can reason, plan, and act on code.
+
+<img width="2764" height="1988" alt="Screenshot" src="https://github.com/user-attachments/assets/3a86b15f-d616-4b56-80c9-63fccb4d8f28" />
+
+**Brought to you by** [🦌 The DeerFlow Team](https://github.com/bytedance/deer-flow). *Inspired by Anthropic's Claude Code.*
+
+---
+
 [English](#english) | [中文](#中文)
 
 ---
 
 ## English
-
-A minimalist yet powerful AI coding agent that helps developers learn and build intelligent coding assistants. Built with Python and featuring a VSCode-like TUI interface, deer-code demonstrates how to create AI agents that can reason, plan, and act on code.
-
-<img width="2764" height="1988" alt="Screenshot" src="https://github.com/user-attachments/assets/3a86b15f-d616-4b56-80c9-63fccb4d8f28" />
-
-**Brought to you by** [🦌 The DeerFlow Team](https://github.com/bytedance/deer-flow).
-
-*Inspired by Anthropic's Claude Code.*
 
 ## 🚀 Quick Start
 
@@ -98,7 +98,7 @@ Now, open the browser and navigate to `https://agentchat.vercel.app/?apiUrl=http
 ## 🌟 Features
 
 - [x] **Beginner-friendly**: Simple project structure designed for learning
-- [x] **VSCode-like CUI**: Intuitive terminal interface
+- [x] **VSCode-like TUI**: Intuitive terminal user interface
 - [x] **OpenAI Compatible**: Works with any OpenAI-compatible API
 - [x] **ReAct Framework**: Reasoning, planning, and acting capabilities
 - [x] **Multi-turn Conversations**: Maintains context across interactions
@@ -110,7 +110,7 @@ Now, open the browser and navigate to `https://agentchat.vercel.app/?apiUrl=http
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Feel free to submit issues and pull requests on GitHub.
 
 ## 📄 License
 
@@ -122,17 +122,11 @@ This project is open source and available under the [MIT License](./LICENSE).
 - Built with [Textual](https://github.com/Textualize/textual) for the TUI interface
 - Powered by [LangGraph](https://github.com/langchain-ai/langgraph) for agent orchestration
 
+**[🔝 Back to Top](#-deer-code)** | **[📖 查看中文版](#中文)**
+
 ---
 
 ## 中文
-
-一个简约而强大的 AI 编程助手，帮助开发者学习和构建智能编码助手。使用 Python 构建，具有类似 VSCode 的终端界面，deer-code 展示了如何创建能够推理、规划和操作代码的 AI 智能体。
-
-<img width="2764" height="1988" alt="Screenshot" src="https://github.com/user-attachments/assets/3a86b15f-d616-4b56-80c9-63fccb4d8f28" />
-
-**由** [🦌 DeerFlow 团队](https://github.com/bytedance/deer-flow) **倾情打造**。
-
-*灵感来源于 Anthropic 的 Claude Code。*
 
 ## 🚀 快速开始
 
@@ -218,7 +212,7 @@ make dev
 ## 🌟 特性
 
 - [x] **新手友好**：专为学习设计的简单项目结构
-- [x] **类 VSCode 界面**：直观的终端用户界面
+- [x] **类 VSCode 终端界面**：直观的终端用户界面（TUI）
 - [x] **OpenAI 兼容**：支持任何 OpenAI 兼容的 API
 - [x] **ReAct 框架**：具备推理、规划和行动能力
 - [x] **多轮对话**：在交互过程中保持上下文
@@ -230,7 +224,7 @@ make dev
 
 ## 🤝 贡献
 
-欢迎贡献！详情请参阅我们的[贡献指南](CONTRIBUTING.md)。
+欢迎贡献！欢迎在 GitHub 上提交 Issue 和 Pull Request。
 
 ## 📄 许可证
 
@@ -241,3 +235,5 @@ make dev
 - 灵感来源于 [Anthropic 的 Claude Code](https://github.com/anthropics/claude-code)
 - 使用 [Textual](https://github.com/Textualize/textual) 构建终端界面
 - 由 [LangGraph](https://github.com/langchain-ai/langgraph) 提供智能体编排能力
+
+**[🔝 返回顶部](#-deer-code)** | **[📖 View English Version](#english)**
