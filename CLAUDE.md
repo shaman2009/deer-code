@@ -90,7 +90,7 @@ deer-code/
 │   │   │   ├── tree.py         # Recursive directory tree (max depth 3)
 │   │   │   └── ignore.py       # DEFAULT_IGNORE_PATTERNS (77 patterns)
 │   │   ├── mcp/                # MCP tool loader (async)
-│   │   ├── search/             # Tavily web search integration
+│   │   ├── search/             # Web search tools (Tavily, Perplexity)
 │   │   ├── terminal/           # Bash terminal with pexpect
 │   │   ├── todo/               # Todo management (state updates)
 │   │   └── reminders.py        # Generates reminders for unfinished todos
@@ -123,7 +123,7 @@ ConsoleApp (Textual TUI)
     ↓
 Agents (LangGraph State Graphs)
     ├── CodingAgent → bash, text_editor, grep, ls, tree, todo_write, MCP tools
-    └── ResearchAgent → tavily_search, write_todos (via TodoListMiddleware), MCP tools
+    └── ResearchAgent → perplexity_search, tavily_search, write_todos (via TodoListMiddleware), MCP tools
 ```
 
 **Two Agent Types**:
@@ -158,7 +158,7 @@ Agents (LangGraph State Graphs)
 - State schema: Managed by `TodoListMiddleware` (PlanningState with todos field)
 - System prompt from `prompts/templates/research_agent.md`
 - Middleware: `TodoListMiddleware` for task planning and tracking
-- Tools: tavily_search, write_todos (from middleware), + MCP tools
+- Tools: perplexity_search, tavily_search, write_todos (from middleware), + MCP tools
 
 **Tool System** (`tools/`):
 
@@ -185,10 +185,18 @@ All tools use `@tool` decorator with `parse_docstring=True`. Tools receive `Tool
    - Updates `CodingAgentState.todos` field
    - Used for task planning and tracking
 
-*Research Tools (1)*:
-7. **tavily_search** (`search/tavily_search.py`) - Web search via Tavily API
+*Research Tools (2)*:
+7. **perplexity_search** (`search/perplexity_search.py`) - AI-powered search via Perplexity API
+   - Requires `tools.perplexity.api_key` in config.yaml
+   - Returns synthesized answer with citations
+   - Parameters: `query`, `recency` (day/week/month/year), `domains` (filter by domain)
+   - Best for: Quick factual lookups, latest information, official documentation queries
+   - Used by ResearchAgent
+8. **tavily_search** (`search/tavily_search.py`) - Web search via Tavily API
    - Requires `tools.tavily.api_key` in config.yaml
-   - Used exclusively by ResearchAgent
+   - Returns raw search results with relevance scores + optional AI answer
+   - Best for: Deep research, multi-source analysis, complex comparisons
+   - Used by ResearchAgent
 
 *Extensibility*:
 - **MCP Tools** (`mcp/load_mcp_tools.py`) - Loaded asynchronously on startup
@@ -230,6 +238,9 @@ models:
 tools:
   tavily:
     api_key: $TAVILY_API_KEY  # Required for tavily_search tool
+  perplexity:
+    api_key: $PERPLEXITY_API_KEY  # Required for perplexity_search tool
+    model: 'sonar'  # Options: 'sonar' (faster, cheaper) or 'sonar-pro' (more detailed)
   mcp_servers:
     server_name:
       transport: 'streamable_http'
@@ -244,7 +255,10 @@ tools:
   - OpenAI-compatible (default): No `type` field needed, `api_base` → `base_url`
   - DeepSeek: `type: deepseek` + `langchain-deepseek` package
   - Doubao: `type: doubao` + `extra_body.thinking` for reasoning control
-- **Tavily configuration**: Required in `tools.tavily.api_key` for web search
+- **Search tools configuration**:
+  - **Tavily**: Required in `tools.tavily.api_key` for tavily_search tool
+  - **Perplexity**: Required in `tools.perplexity.api_key` for perplexity_search tool
+    - Optional `tools.perplexity.model`: 'sonar' (default, faster) or 'sonar-pro' (more detailed)
 - **MCP servers**: Configured under `tools.mcp_servers` with transport and URL
 
 ## Critical Implementation Details
