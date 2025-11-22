@@ -8,7 +8,7 @@ from langgraph.checkpoint.base import RunnableConfig
 from deer_code.models import init_chat_model
 from deer_code.project import project
 from deer_code.prompts import apply_prompt_template
-from deer_code.tools import tavily_search_tool
+from deer_code.tools import perplexity_search_tool, tavily_search_tool
 
 
 def create_research_agent(plugin_tools: list[BaseTool] = [], **kwargs):
@@ -24,6 +24,7 @@ def create_research_agent(plugin_tools: list[BaseTool] = [], **kwargs):
     return create_agent(
         model=init_chat_model(),
         tools=[
+            perplexity_search_tool,
             tavily_search_tool,
             *plugin_tools,
         ],
