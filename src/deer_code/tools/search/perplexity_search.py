@@ -89,6 +89,9 @@ def perplexity_search_tool(
             data = response.json()
 
         # Extract answer from response
+        if not data.get("choices") or len(data["choices"]) == 0:
+            return "Error performing Perplexity search: API returned no response choices"
+
         answer = data["choices"][0]["message"]["content"]
 
         # Format the response
@@ -100,22 +103,26 @@ def perplexity_search_tool(
         # Extract citations from search_results field
         if "search_results" in data and data["search_results"]:
             result_lines.append("## Citations")
-            for idx, result in enumerate(data["search_results"], 1):
+            citation_idx = 1
+            for result in data["search_results"]:
                 title = result.get("title", "No Title")
                 url = result.get("url", "")
                 date = result.get("date", "")
 
-                # Format as Markdown link
-                citation = f"{idx}. [{title}]({url})"
-                if date:
-                    citation += f" ({date})"
-                result_lines.append(citation)
+                # Format as Markdown link (skip if no URL)
+                if url:
+                    citation = f"{citation_idx}. [{title}]({url})"
+                    if date:
+                        citation += f" ({date})"
+                    result_lines.append(citation)
+                    citation_idx += 1
             result_lines.append("")
 
         return "\n".join(result_lines)
 
     except httpx.HTTPStatusError as e:
-        return f"Error performing Perplexity search: HTTP {e.response.status_code} - {e.response.text}"
+        error_text = e.response.text[:500] if len(e.response.text) > 500 else e.response.text
+        return f"Error performing Perplexity search: HTTP {e.response.status_code} - {error_text}"
     except httpx.RequestError as e:
         return f"Error performing Perplexity search: Network error - {str(e)}"
     except KeyError as e:
