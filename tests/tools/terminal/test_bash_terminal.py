@@ -65,7 +65,8 @@ class TestBashTerminalBasics:
         """Test command with multiline output."""
         terminal = BashTerminal()
         try:
-            result = terminal.execute("echo 'line1'; echo 'line2'; echo 'line3'")
+            # Use printf to generate multiline output without command chaining
+            result = terminal.execute("printf 'line1\\nline2\\nline3\\n'")
             assert "line1" in result
             assert "line2" in result
             assert "line3" in result
@@ -165,86 +166,109 @@ class TestBashTerminalFileOperations:
 
 class TestBashTerminalCommandInjection:
     """
-    Test command injection scenarios.
+    Test command injection protection (Week 2 security fixes).
 
-    NOTE: These tests document CURRENT BEHAVIOR where command injection is possible.
-    After implementing CommandValidator in Week 2, these tests should be updated to
-    verify that injections are BLOCKED.
+    These tests verify that CommandValidator blocks dangerous command patterns
+    while still allowing legitimate command usage.
     """
 
-    def test_semicolon_command_chaining_currently_works(self, tmp_path):
+    def test_semicolon_command_chaining_blocked(self, tmp_path):
         """
-        SECURITY ISSUE: Semicolon command chaining currently works.
+        SECURITY FIX: Semicolon command chaining is now blocked.
+        """
+        from deer_code.tools.terminal.command_validator import CommandValidationError
 
-        After Week 2 security fixes, this should raise an exception or sanitize input.
-        """
         terminal = BashTerminal(cwd=str(tmp_path))
         try:
-            # This demonstrates the vulnerability
-            result = terminal.execute("echo 'first'; echo 'second'")
-            # Currently both commands execute
-            assert "first" in result
-            assert "second" in result
-            # TODO: After security hardening, this should be blocked
+            with pytest.raises(CommandValidationError) as exc_info:
+                terminal.execute("echo 'first'; echo 'second'")
+
+            assert "command chaining with semicolon" in str(exc_info.value)
         finally:
             terminal.close()
 
-    def test_pipe_command_currently_works(self, tmp_path):
+    def test_pipe_command_still_works(self, tmp_path):
         """
-        SECURITY ISSUE: Pipe commands currently work.
+        Pipe commands are allowed by default as they are legitimate Unix usage.
 
-        After Week 2 security fixes, this should be sanitized or restricted.
+        CommandValidator allows pipes but validates both sides.
         """
         terminal = BashTerminal(cwd=str(tmp_path))
         try:
             result = terminal.execute("echo 'hello world' | grep 'hello'")
-            assert "hello world" in result
-            # TODO: After security hardening, consider restricting pipes
+            assert "hello" in result
         finally:
             terminal.close()
 
-    def test_background_command_currently_works(self, tmp_path):
+    def test_background_command_blocked(self, tmp_path):
         """
-        SECURITY ISSUE: Background commands currently work.
+        SECURITY FIX: Background commands are now blocked.
+        """
+        from deer_code.tools.terminal.command_validator import CommandValidationError
 
-        After Week 2 security fixes, background commands should be blocked.
-        """
         terminal = BashTerminal(cwd=str(tmp_path))
         try:
-            # This is dangerous as it could leave processes running
-            terminal.execute("sleep 0.1 &")
-            # Command completes immediately (runs in background)
-            # TODO: After security hardening, this should be blocked
+            with pytest.raises(CommandValidationError) as exc_info:
+                terminal.execute("sleep 0.1 &")
+
+            assert "background execution" in str(exc_info.value)
         finally:
             terminal.close()
 
-    def test_command_substitution_currently_works(self, tmp_path):
+    def test_command_substitution_blocked(self, tmp_path):
         """
-        SECURITY ISSUE: Command substitution currently works.
+        SECURITY FIX: Command substitution is now blocked.
+        """
+        from deer_code.tools.terminal.command_validator import CommandValidationError
 
-        After Week 2 security fixes, this should be sanitized.
-        """
         terminal = BashTerminal(cwd=str(tmp_path))
         try:
-            result = terminal.execute("echo $(echo 'substituted')")
-            assert "substituted" in result
-            # TODO: After security hardening, consider sanitizing $()
+            with pytest.raises(CommandValidationError) as exc_info:
+                terminal.execute("echo $(echo 'substituted')")
+
+            assert "command substitution" in str(exc_info.value)
         finally:
             terminal.close()
 
-    def test_redirection_currently_works(self, tmp_path):
+    def test_safe_redirection_works(self, tmp_path):
         """
-        SECURITY ISSUE: File redirection currently works without validation.
-
-        After Week 2 security fixes, redirection should be validated against
-        project boundaries.
+        Safe file redirection within project directory is allowed.
         """
         terminal = BashTerminal(cwd=str(tmp_path))
         try:
             terminal.execute("echo 'content' > testfile.txt")
             result = terminal.execute("cat testfile.txt")
             assert "content" in result
-            # TODO: After security hardening, validate redirect paths
+        finally:
+            terminal.close()
+
+    def test_and_operator_blocked(self, tmp_path):
+        """
+        SECURITY FIX: && command chaining is now blocked.
+        """
+        from deer_code.tools.terminal.command_validator import CommandValidationError
+
+        terminal = BashTerminal(cwd=str(tmp_path))
+        try:
+            with pytest.raises(CommandValidationError) as exc_info:
+                terminal.execute("mkdir test && cd test")
+
+            assert "command chaining with &&" in str(exc_info.value)
+        finally:
+            terminal.close()
+
+    def test_or_operator_blocked(self, tmp_path):
+        """
+        SECURITY FIX: || command chaining is now blocked.
+        """
+        from deer_code.tools.terminal.command_validator import CommandValidationError
+
+        terminal = BashTerminal(cwd=str(tmp_path))
+        try:
+            with pytest.raises(CommandValidationError) as exc_info:
+                terminal.execute("test -f file || touch file")
+
+            assert "command chaining with ||" in str(exc_info.value)
         finally:
             terminal.close()
 
@@ -274,21 +298,28 @@ class TestBashTerminalErrorHandling:
             terminal.close()
 
     def test_empty_command(self):
-        """Test executing empty command."""
+        """Test that empty commands are rejected by validator."""
+        from deer_code.tools.terminal.command_validator import CommandValidationError
+
         terminal = BashTerminal()
         try:
-            result = terminal.execute("")
-            # Empty command should return empty or minimal output
-            assert result == "" or len(result.strip()) == 0
+            with pytest.raises(CommandValidationError) as exc_info:
+                terminal.execute("")
+
+            assert "Empty command" in str(exc_info.value)
         finally:
             terminal.close()
 
     def test_command_with_only_whitespace(self):
-        """Test command with only whitespace."""
+        """Test that whitespace-only commands are rejected by validator."""
+        from deer_code.tools.terminal.command_validator import CommandValidationError
+
         terminal = BashTerminal()
         try:
-            result = terminal.execute("   ")
-            assert result == "" or len(result.strip()) == 0
+            with pytest.raises(CommandValidationError) as exc_info:
+                terminal.execute("   ")
+
+            assert "Empty command" in str(exc_info.value)
         finally:
             terminal.close()
 
@@ -401,7 +432,9 @@ class TestBashTerminalTimeout:
         terminal = BashTerminal()
         try:
             # Sleep for 2 seconds (well within 30s timeout)
-            result = terminal.execute("sleep 2 && echo 'done'")
+            terminal.execute("sleep 2")
+            # Then verify terminal still works
+            result = terminal.execute("echo 'done'")
             assert "done" in result
         finally:
             terminal.close()
