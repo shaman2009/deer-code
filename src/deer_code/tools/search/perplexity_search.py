@@ -1,9 +1,8 @@
 import os
 from typing import Literal, Optional
 
+import httpx
 from langchain.tools import ToolRuntime, tool
-from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage
 
 from deer_code.config import get_config_section
 
@@ -60,46 +59,66 @@ def perplexity_search_tool(
     model_name = config.get("model", "sonar") if config else "sonar"
 
     try:
-        # Build model_kwargs for Perplexity-specific parameters
-        model_kwargs = {
-            "return_citations": True,
+        # Build request payload
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": query}],
         }
 
+        # Add Perplexity-specific parameters
         if recency:
-            model_kwargs["search_recency_filter"] = recency
+            payload["search_recency_filter"] = recency
 
         if domains:
-            model_kwargs["search_domain_filter"] = domains
+            payload["search_domain_filter"] = domains
 
-        # Initialize ChatOpenAI with Perplexity endpoint
-        model = ChatOpenAI(
-            base_url="https://api.perplexity.ai",
-            api_key=api_key,
-            model=model_name,
-            model_kwargs=model_kwargs,
-        )
+        # Make API request
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
 
-        # Perform search
-        response = model.invoke([HumanMessage(content=query)])
+        with httpx.Client() as client:
+            response = client.post(
+                "https://api.perplexity.ai/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        # Extract answer from response
+        answer = data["choices"][0]["message"]["content"]
 
         # Format the response
         result_lines = []
-
-        # Add answer
         result_lines.append("## Answer")
-        result_lines.append(response.content)
+        result_lines.append(answer)
         result_lines.append("")
 
-        # Add citations if available
-        if hasattr(response, "response_metadata"):
-            citations = response.response_metadata.get("citations", [])
-            if citations:
-                result_lines.append("## Citations")
-                for idx, citation in enumerate(citations, 1):
-                    result_lines.append(f"{idx}. {citation}")
-                result_lines.append("")
+        # Extract citations from search_results field
+        if "search_results" in data and data["search_results"]:
+            result_lines.append("## Citations")
+            for idx, result in enumerate(data["search_results"], 1):
+                title = result.get("title", "No Title")
+                url = result.get("url", "")
+                date = result.get("date", "")
+
+                # Format as Markdown link
+                citation = f"{idx}. [{title}]({url})"
+                if date:
+                    citation += f" ({date})"
+                result_lines.append(citation)
+            result_lines.append("")
 
         return "\n".join(result_lines)
 
+    except httpx.HTTPStatusError as e:
+        return f"Error performing Perplexity search: HTTP {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        return f"Error performing Perplexity search: Network error - {str(e)}"
+    except KeyError as e:
+        return f"Error performing Perplexity search: Unexpected response format - missing {str(e)}"
     except Exception as e:
         return f"Error performing Perplexity search: {str(e)}"
