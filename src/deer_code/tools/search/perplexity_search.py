@@ -20,26 +20,10 @@ def perplexity_search_tool(
     quick factual lookups. For in-depth analysis requiring multiple sources or complex
     research tasks, consider using tavily_search instead.
 
-    Typical use cases:
-    - Query software versions, release dates, and other factual information
-    - Get quick explanations of technical concepts
-    - Search official documentation (using domains parameter)
-    - Find latest information (using recency parameter)
-
     Args:
-        query: The search query - should be clear, specific, and focused.
-        recency: Limit search results by time range (optional).
-            - "day": Only search content from the last day
-            - "week": Only search content from the last week
-            - "month": Only search content from the last month
-            - "year": Only search content from the last year
-            Use this for rapidly evolving technical topics.
-        domains: List of domains to restrict search to (optional).
-            Example: ["python.org", "github.com"] to search only official docs
-            Improves answer authority and accuracy.
-
-    Returns:
-        Formatted text containing synthesized answer and citation sources.
+        query: The search query string.
+        recency: Time range filter - "day", "week", "month", or "year" (optional).
+        domains: List of domains to restrict search, e.g. ["python.org"] (optional).
     """
     # Get API key from config
     config = get_config_section(["tools", "perplexity"])
