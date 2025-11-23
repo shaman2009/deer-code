@@ -3,18 +3,25 @@ import re
 
 import pexpect
 
+from .command_validator import CommandValidator, CommandValidationError
+
 
 class BashTerminal:
-    """A keep-alive terminal for executing bash commands."""
+    """A keep-alive terminal for executing bash commands with security controls."""
 
-    def __init__(self, cwd=None):
+    def __init__(self, cwd=None, validator=None):
         """
         Initialize BashTerminal
 
         Args:
             cwd: Initial working directory, defaults to current directory
+            validator: CommandValidator instance for security validation.
+                      If None, creates a default validator with standard security settings.
         """
         self.cwd = cwd or os.getcwd()
+        self.validator = validator or CommandValidator(
+            allow_pipes=True, allow_redirects=True
+        )
 
         # Start bash shell
         self.shell = pexpect.spawn("/bin/bash", encoding="utf-8", echo=False)
@@ -37,7 +44,13 @@ class BashTerminal:
 
         Returns:
             Command output result (string)
+
+        Raises:
+            CommandValidationError: If command fails security validation
         """
+        # Validate command for security before execution
+        self.validator.validate(command)
+
         # Send command
         self.shell.sendline(command)
 
