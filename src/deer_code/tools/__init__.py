@@ -6,6 +6,7 @@ __all__ = [
     "grep_tool",
     "load_mcp_tools",
     "ls_tool",
+    "perplexity_search_tool",
     "tavily_search_tool",
     "text_editor_tool",
     "todo_write_tool",
@@ -30,6 +31,9 @@ def __getattr__(name):
     elif name == "load_mcp_tools":
         from .mcp import load_mcp_tools
         return load_mcp_tools
+    elif name == "perplexity_search_tool":
+        from .search import perplexity_search_tool
+        return perplexity_search_tool
     elif name == "tavily_search_tool":
         from .search import tavily_search_tool
         return tavily_search_tool
