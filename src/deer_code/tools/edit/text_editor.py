@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
+
+from .path_validator import PathValidator, PathValidationError
 
 TextEditorCommand = Literal[
     "view",
@@ -12,25 +14,48 @@ TextEditorCommand = Literal[
 class TextEditor:
     """A standalone text editor tool for AI agents to interact with files.
 
-    This tool allows viewing, creating, and editing files with proper error handling
-    and suggestions to help AI agents learn from mistakes.
+    This tool allows viewing, creating, and editing files with proper error handling,
+    security validation, and suggestions to help AI agents learn from mistakes.
     """
 
-    def validate_path(self, command: TextEditorCommand, path: Path):
-        """Check that the path is absolute.
+    def __init__(self, path_validator: Optional[PathValidator] = None):
+        """
+        Initialize TextEditor.
+
+        Args:
+            path_validator: PathValidator instance for security validation.
+                           If None, creates a default validator with current directory as root.
+        """
+        self.path_validator = path_validator or PathValidator()
+
+    def validate_path(
+        self, command: TextEditorCommand, path: Path, *, allow_nonexistent: bool = False
+    ):
+        """Validate that the path is safe for file operations.
 
         Args:
             command: The command to execute.
             path: The path to the file or directory.
+            allow_nonexistent: If True, allows paths that don't exist yet (for creation).
 
         Raises:
-            ValueError: If path is not absolute.
+            ValueError: If path is not absolute or fails security validation.
+            PathValidationError: If path is outside project root or traverses directories.
         """
+        # First check if absolute (for better error messages)
         if not path.is_absolute():
-            suggested_path = Path("") / path
+            suggested_path = Path.cwd() / path
             raise ValueError(
-                f"The path {path} is not an absolute path, it should start with `/`. Do you mean {suggested_path}?"
+                f"The path {path} is not an absolute path, it should start with `/`. "
+                f"Do you mean {suggested_path}?"
             )
+
+        # Then perform security validation
+        try:
+            return self.path_validator.validate(path, allow_nonexistent=allow_nonexistent)
+        except PathValidationError:
+            # Re-raise as-is for security errors
+            raise
 
     def view(self, path: Path, view_range: list[int] | None = None):
         """View the content of a file.
@@ -45,14 +70,18 @@ class TextEditor:
 
         Raises:
             ValueError: If file doesn't exist, is not a file, or view_range is invalid.
+            PathValidationError: If path fails security validation.
         """
-        if not path.exists():
-            raise ValueError(f"File does not exist: {path}")
+        # Validate path for security
+        validated_path = self.validate_path("view", path)
 
-        if not path.is_file():
-            raise ValueError(f"Path is not a file: {path}")
+        if not validated_path.exists():
+            raise ValueError(f"File does not exist: {validated_path}")
 
-        file_content = self.read_file(path)
+        if not validated_path.is_file():
+            raise ValueError(f"Path is not a file: {validated_path}")
+
+        file_content = self.read_file(validated_path)
         init_line = 1
         if view_range:
             if len(view_range) != 2 or not all(isinstance(i, int) for i in view_range):
@@ -102,19 +131,23 @@ class TextEditor:
 
         Raises:
             ValueError: If file doesn't exist, is not a file, or old_str not found.
+            PathValidationError: If path fails security validation.
         """
-        if not path.exists():
-            raise ValueError(f"File does not exist: {path}")
+        # Validate path for security
+        validated_path = self.validate_path("str_replace", path)
 
-        if not path.is_file():
-            raise ValueError(f"Path is not a file: {path}")
+        if not validated_path.exists():
+            raise ValueError(f"File does not exist: {validated_path}")
+
+        if not validated_path.is_file():
+            raise ValueError(f"Path is not a file: {validated_path}")
 
         # Read the file content
-        file_content = self.read_file(path)
+        file_content = self.read_file(validated_path)
 
         # Check if old_str exists in the file
         if old_str not in file_content:
-            raise ValueError(f"String not found in file: {path}")
+            raise ValueError(f"String not found in file: {validated_path}")
 
         # Perform the replacement
         if new_str is None:
@@ -126,7 +159,7 @@ class TextEditor:
         occurrences = file_content.count(old_str)
 
         # Write the modified content back to the file
-        self.write_file(path, new_content)
+        self.write_file(validated_path, new_content)
 
         return occurrences
 
@@ -140,15 +173,19 @@ class TextEditor:
 
         Raises:
             ValueError: If file doesn't exist, is not a file, or insert_line is invalid.
+            PathValidationError: If path fails security validation.
         """
-        if not path.exists():
-            raise ValueError(f"File does not exist: {path}")
+        # Validate path for security
+        validated_path = self.validate_path("insert", path)
 
-        if not path.is_file():
-            raise ValueError(f"Path is not a file: {path}")
+        if not validated_path.exists():
+            raise ValueError(f"File does not exist: {validated_path}")
+
+        if not validated_path.is_file():
+            raise ValueError(f"Path is not a file: {validated_path}")
 
         # Read the file content
-        file_content = self.read_file(path)
+        file_content = self.read_file(validated_path)
         lines = file_content.splitlines()
 
         # Validate insert_line
@@ -174,7 +211,7 @@ class TextEditor:
         new_content = "\n".join(lines)
 
         # Write the modified content back to the file
-        self.write_file(path, new_content)
+        self.write_file(validated_path, new_content)
 
     def read_file(self, path: Path):
         """Read the content of a file.
