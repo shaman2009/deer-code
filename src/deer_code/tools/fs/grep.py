@@ -1,11 +1,34 @@
 import subprocess
+from pathlib import Path
 from typing import Literal, Optional
 
 from langchain.tools import ToolRuntime, tool
 
 from deer_code.tools.reminders import generate_reminders
+from deer_code.tools.edit.path_validator import PathValidator, PathValidationError
 
 from .ignore import DEFAULT_IGNORE_PATTERNS
+
+
+def _validate_grep_pattern(pattern: str) -> None:
+    """
+    Validate that grep pattern is safe.
+
+    While ripgrep with list-style arguments is generally safe from command injection,
+    we still validate patterns to prevent potential issues.
+
+    Args:
+        pattern: The regex pattern to validate
+
+    Raises:
+        ValueError: If pattern contains suspicious characters
+    """
+    if not pattern or not pattern.strip():
+        raise ValueError("Pattern cannot be empty")
+
+    # Check for null bytes (can cause issues in C code)
+    if '\0' in pattern:
+        raise ValueError("Pattern cannot contain null bytes")
 
 
 @tool("grep", parse_docstring=True)
@@ -35,6 +58,7 @@ def grep_tool(
         pattern: The regular expression pattern to search for in file contents.
                 Uses ripgrep syntax - literal braces need escaping (e.g., `interface\\{\\}` for `interface{}`).
         path: File or directory to search in. Defaults to current working directory if not specified.
+              Must be an absolute path within the project root.
         glob: Glob pattern to filter files (e.g., "*.js", "*.{ts,tsx}").
         output_mode: Output mode - "content" shows matching lines with optional context,
                     "files_with_matches" shows only file paths (default),
@@ -52,15 +76,41 @@ def grep_tool(
 
     Returns:
         Search results as a string, formatted according to the output_mode.
+
+    Raises:
+        ValueError: If pattern is invalid
+        PathValidationError: If path is outside project root
     """
+    # Validate pattern for security
+    _validate_grep_pattern(pattern)
+
+    # Validate path for security if provided
+    if path:
+        path_obj = Path(path)
+        # Only validate if it's an absolute path (relative paths are relative to cwd which is safe)
+        if path_obj.is_absolute():
+            validator = PathValidator()
+            try:
+                # Validate that path is within project root
+                # Allow nonexistent paths since we're searching
+                validated_path = validator.validate(path_obj, allow_nonexistent=True)
+                search_path = str(validated_path)
+            except PathValidationError:
+                # If validation fails, don't allow the search
+                raise
+        else:
+            # Relative path - use as-is (relative to cwd)
+            search_path = path
+    else:
+        search_path = "."
+
     # Build ripgrep command
     cmd = ["rg"]
 
     # Add pattern
     cmd.append(pattern)
 
-    # Add path if specified
-    search_path = path if path else "."
+    # Add path
     cmd.append(search_path)
 
     # Add output mode flags
