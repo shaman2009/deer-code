@@ -83,15 +83,21 @@ deer-code/
 │   │       ├── coding_agent.md # Coding agent system prompt
 │   │       └── research_agent.md # Research agent system prompt
 │   ├── tools/                  # Tool implementations
-│   │   ├── edit/               # Text editor (view, create, str_replace, insert)
+│   │   ├── edit/               # Text editor with security controls
+│   │   │   ├── text_editor.py  # File editing (view, str_replace, insert)
+│   │   │   ├── path_validator.py # Path traversal prevention (88% coverage)
+│   │   │   └── tool.py         # LangChain tool wrapper
 │   │   ├── fs/                 # File system tools
-│   │   │   ├── grep.py         # Ripgrep search with context
+│   │   │   ├── grep.py         # Ripgrep search with path validation
 │   │   │   ├── ls.py           # Directory listing with filtering
 │   │   │   ├── tree.py         # Recursive directory tree (max depth 3)
 │   │   │   └── ignore.py       # DEFAULT_IGNORE_PATTERNS (77 patterns)
 │   │   ├── mcp/                # MCP tool loader (async)
 │   │   ├── search/             # Tavily web search integration
-│   │   ├── terminal/           # Bash terminal with pexpect
+│   │   ├── terminal/           # Bash terminal with security controls
+│   │   │   ├── bash_terminal.py # Persistent bash session (97% coverage)
+│   │   │   ├── command_validator.py # Command injection prevention (100% coverage)
+│   │   │   └── tool.py         # LangChain tool wrapper
 │   │   ├── todo/               # Todo management (state updates)
 │   │   └── reminders.py        # Generates reminders for unfinished todos
 │   ├── main.py                 # Entry point (loads dotenv, launches TUI)
