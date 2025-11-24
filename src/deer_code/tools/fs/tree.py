@@ -133,7 +133,7 @@ def tree_tool(
         output = "\n".join(lines)
 
         # Format the result
-        return f"Here's the result in {search_path}:\n\n```\n{output}\n```{generate_reminders(runtime)}"
+        return f"Here's the result in {search_path}:\n\n```\n{output}\n```{generate_reminders(runtime, tool_name='tree')}"
 
     except Exception as e:
         return f"Error: {str(e)}"

@@ -11,7 +11,7 @@ from deer_code.prompts import apply_prompt_template
 from deer_code.tools import perplexity_search_tool, tavily_search_tool
 
 
-def create_research_agent(plugin_tools: list[BaseTool] = [], **kwargs):
+def create_research_agent(plugin_tools: list[BaseTool] | None = None, **kwargs):
     """Create a research agent with todo list capabilities.
 
     Args:
@@ -21,6 +21,8 @@ def create_research_agent(plugin_tools: list[BaseTool] = [], **kwargs):
     Returns:
         The research agent with TodoListMiddleware enabled.
     """
+    if plugin_tools is None:
+        plugin_tools = []
     return create_agent(
         model=init_chat_model(),
         tools=[

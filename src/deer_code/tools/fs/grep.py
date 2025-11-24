@@ -173,7 +173,7 @@ def grep_tool(
             output = "\n".join(lines[:head_limit])
 
         # Format the result
-        reminders = generate_reminders(runtime)
+        reminders = generate_reminders(runtime, tool_name="grep")
         if output:
             return (
                 f"Here's the result in {search_path}:\n\n```\n{output}\n```{reminders}"

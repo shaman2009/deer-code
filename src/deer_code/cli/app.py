@@ -197,7 +197,8 @@ class ConsoleApp(App):
             elif tool_name == "ls":
                 self._terminal_tool_calls.append(tool_call["id"])
                 terminal_view.write(f"$ ls {" ".join(tool_args.values())}")
-            elif tool_name == "todo_write":
+            elif tool_name == "write_todos" or tool_name == "todo_write":
+                # Support both TodoListMiddleware (write_todos) and legacy (todo_write)
                 bottom_right_tabs.active = "todo-tab"
                 todo_list_view.update_items(tool_args["todos"])
             elif tool_name == "text_editor":

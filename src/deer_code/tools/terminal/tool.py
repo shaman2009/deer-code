@@ -36,5 +36,5 @@ def bash_tool(runtime: ToolRuntime, command: str, reset_cwd: Optional[bool] = Fa
     elif reset_cwd:
         keep_alive_terminal.close()
         keep_alive_terminal = BashTerminal(project.root_dir)
-    reminders = generate_reminders(runtime)
+    reminders = generate_reminders(runtime, tool_name="bash")
     return f"```\n{keep_alive_terminal.execute(command)}\n```{reminders}"

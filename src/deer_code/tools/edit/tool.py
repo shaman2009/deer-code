@@ -39,7 +39,7 @@ def text_editor_tool(
         insert_line: Only applies for the "insert" command. The line number after which to insert the text (0 for beginning of file).
     """
     _path = Path(path)
-    reminders = generate_reminders(runtime)
+    reminders = generate_reminders(runtime, tool_name="text_editor")
     try:
         editor = TextEditor()
         editor.validate_path(command, _path)

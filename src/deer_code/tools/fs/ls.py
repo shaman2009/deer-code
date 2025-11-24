@@ -63,7 +63,7 @@ def ls_tool(
             filtered_items.append(item)
     items = filtered_items
 
-    reminders = generate_reminders(runtime)
+    reminders = generate_reminders(runtime, tool_name="ls")
 
     # Format the output
     if not items:
