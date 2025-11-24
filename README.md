@@ -84,6 +84,11 @@ tools:
   tavily:
     api_key: $TAVILY_API_KEY
 
+  # Optional: Perplexity API for AI-powered search (ResearchAgent)
+  perplexity:
+    api_key: $PERPLEXITY_API_KEY
+    model: 'sonar'  # Options: 'sonar' (faster, cheaper) or 'sonar-pro' (more detailed)
+
   # Optional: MCP servers for additional capabilities
   mcp_servers:
     context7:
@@ -124,7 +129,7 @@ Now, open the browser and navigate to `https://agentchat.vercel.app/?apiUrl=http
 ### Agent System
 - [x] **Dual-Agent Architecture**:
   - **CodingAgent**: Primary agent for code analysis, editing, and execution
-  - **ResearchAgent**: Specialized agent for web research using Tavily search
+  - **ResearchAgent**: Specialized agent for web research using Perplexity and Tavily search
 - [x] **Task Planning**: Built-in todo system with TodoListMiddleware for project management
 - [x] **Agent Middleware**: Extensible middleware system for adding capabilities
 
@@ -135,7 +140,9 @@ Now, open the browser and navigate to `https://agentchat.vercel.app/?apiUrl=http
   - `ls`: Directory listing with glob pattern matching
   - `tree`: Recursive directory tree visualization (max depth 3)
 - [x] **Bash Execution**: Persistent bash terminal sessions with state preservation
-- [x] **Web Search**: Tavily integration for research and documentation lookup
+- [x] **Web Search**: Dual search capabilities for comprehensive research
+  - **Perplexity Search**: AI-powered search with synthesized answers and citations
+  - **Tavily Search**: Raw web search results with relevance scores for deep analysis
 - [x] **MCP Integration**: Bring your own MCP tools to enhance the agent's capabilities
 
 ### Configuration & Extensibility
@@ -155,7 +162,7 @@ ConsoleApp (Textual TUI)
     ↓
 Agents (LangGraph State Graphs)
     ├── CodingAgent → bash, text_editor, grep, ls, tree, todo_write, MCP tools
-    └── ResearchAgent → tavily_search, write_todos (via TodoListMiddleware), MCP tools
+    └── ResearchAgent → perplexity_search, tavily_search, write_todos (via TodoListMiddleware), MCP tools
 ```
 
 ### Key Technologies
@@ -276,6 +283,11 @@ tools:
   tavily:
     api_key: $TAVILY_API_KEY
 
+  # 可选：Perplexity API 用于 AI 驱动的搜索（ResearchAgent）
+  perplexity:
+    api_key: $PERPLEXITY_API_KEY
+    model: 'sonar'  # 选项：'sonar'（更快、更便宜）或 'sonar-pro'（更详细）
+
   # 可选：MCP 服务器用于扩展功能
   mcp_servers:
     context7:
@@ -316,7 +328,7 @@ make dev
 ### 智能体系统
 - [x] **双智能体架构**：
   - **CodingAgent**：用于代码分析、编辑和执行的主要智能体
-  - **ResearchAgent**：使用 Tavily 搜索进行网络研究的专用智能体
+  - **ResearchAgent**：使用 Perplexity 和 Tavily 搜索进行网络研究的专用智能体
 - [x] **任务规划**：使用 TodoListMiddleware 的内置待办事项系统用于项目管理
 - [x] **智能体中间件**：用于添加功能的可扩展中间件系统
 
@@ -327,7 +339,9 @@ make dev
   - `ls`：支持 glob 模式匹配的目录列表
   - `tree`：递归目录树可视化（最大深度 3）
 - [x] **Bash 执行**：持久化 bash 终端会话，保留状态
-- [x] **网络搜索**：集成 Tavily 用于研究和文档查找
+- [x] **网络搜索**：双重搜索能力，实现全面研究
+  - **Perplexity 搜索**：AI 驱动的搜索，提供综合答案和引用
+  - **Tavily 搜索**：原始网络搜索结果，带相关性评分，用于深度分析
 - [x] **MCP 集成**：引入你自己的 MCP 工具来增强智能体能力
 
 ### 配置与扩展性
@@ -347,7 +361,7 @@ ConsoleApp（Textual TUI）
     ↓
 智能体层（LangGraph 状态图）
     ├── CodingAgent → bash, text_editor, grep, ls, tree, todo_write, MCP 工具
-    └── ResearchAgent → tavily_search, write_todos（通过 TodoListMiddleware）, MCP 工具
+    └── ResearchAgent → perplexity_search, tavily_search, write_todos（通过 TodoListMiddleware）, MCP 工具
 ```
 
 ### 关键技术
