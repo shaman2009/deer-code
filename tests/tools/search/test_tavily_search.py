@@ -5,12 +5,26 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from deer_code.tools.search.tavily_search import tavily_search_tool
+from deer_code.tools.search.tavily_search import (
+    get_tavily_client,
+    get_tavily_config,
+    tavily_search_tool,
+)
 
 
 @pytest.mark.unit
 class TestTavilySearchTool:
     """Unit tests for tavily_search_tool."""
+
+    @pytest.fixture(autouse=True)
+    def clear_caches(self):
+        """Clear LRU caches before each test to avoid state leakage."""
+        get_tavily_client.cache_clear()
+        get_tavily_config.cache_clear()
+        yield
+        # Clean up after test
+        get_tavily_client.cache_clear()
+        get_tavily_config.cache_clear()
 
     def test_search_with_answer_and_results(
         self,
@@ -152,7 +166,7 @@ class TestTavilySearchTool:
         clear_tavily_api_key,
     ):
         """Test error when API key is missing from both config and environment."""
-        with patch("deer_code.tools.search.tavily_search.get_config_section") as mock_config:
+        with patch("deer_code.tools.search.tavily_search.get_tavily_config") as mock_config:
             mock_config.return_value = None
 
             result = tavily_search_tool.func(
@@ -173,21 +187,21 @@ class TestTavilySearchTool:
         """Test that API key is read from config when not in environment."""
         config_api_key = "config_api_key_xyz"
 
-        with patch("deer_code.tools.search.tavily_search.get_config_section") as mock_config:
+        with patch("deer_code.tools.search.tavily_search.get_tavily_config") as mock_config:
             mock_config.return_value = config_api_key
 
-            with patch("deer_code.tools.search.tavily_search.TavilyClient") as mock_client_class:
+            with patch("deer_code.tools.search.tavily_search.get_tavily_client") as mock_get_client:
                 mock_client = MagicMock()
                 mock_client.search.return_value = sample_tavily_response
-                mock_client_class.return_value = mock_client
+                mock_get_client.return_value = mock_client
 
                 result = tavily_search_tool.func(
                     runtime=mock_tool_runtime,
                     query="test",
                 )
 
-                # Verify TavilyClient was initialized with config API key
-                mock_client_class.assert_called_once_with(api_key=config_api_key)
+                # Verify get_tavily_client was called with config API key
+                mock_get_client.assert_called_once_with(config_api_key)
                 assert "## Search Results" in result
 
     def test_api_key_fallback_to_env(
@@ -197,21 +211,22 @@ class TestTavilySearchTool:
         sample_tavily_response,
     ):
         """Test that API key falls back to environment variable when not in config."""
-        with patch("deer_code.tools.search.tavily_search.get_config_section") as mock_config:
-            mock_config.return_value = None
+        # Mock the config function to return the env API key (simulating fallback)
+        with patch("deer_code.tools.search.tavily_search.get_tavily_config") as mock_config:
+            mock_config.return_value = mock_tavily_api_key
 
-            with patch("deer_code.tools.search.tavily_search.TavilyClient") as mock_client_class:
+            with patch("deer_code.tools.search.tavily_search.get_tavily_client") as mock_get_client:
                 mock_client = MagicMock()
                 mock_client.search.return_value = sample_tavily_response
-                mock_client_class.return_value = mock_client
+                mock_get_client.return_value = mock_client
 
                 result = tavily_search_tool.func(
                     runtime=mock_tool_runtime,
                     query="test",
                 )
 
-                # Verify TavilyClient was initialized with env API key
-                mock_client_class.assert_called_once_with(api_key=mock_tavily_api_key)
+                # Verify get_tavily_client was called with env API key
+                mock_get_client.assert_called_once_with(mock_tavily_api_key)
                 assert "## Search Results" in result
 
     def test_api_key_env_var_expansion(
@@ -221,22 +236,23 @@ class TestTavilySearchTool:
         sample_tavily_response,
     ):
         """Test that API key with $ENV_VAR syntax is expanded correctly."""
-        with patch("deer_code.tools.search.tavily_search.get_config_section") as mock_config:
-            # Config returns "$TAVILY_API_KEY" which should be expanded
-            mock_config.return_value = "$TAVILY_API_KEY"
+        # Mock get_tavily_config to return the expanded API key
+        with patch("deer_code.tools.search.tavily_search.get_tavily_config") as mock_config:
+            # Simulate that config expanded "$TAVILY_API_KEY" to actual value
+            mock_config.return_value = mock_tavily_api_key
 
-            with patch("deer_code.tools.search.tavily_search.TavilyClient") as mock_client_class:
+            with patch("deer_code.tools.search.tavily_search.get_tavily_client") as mock_get_client:
                 mock_client = MagicMock()
                 mock_client.search.return_value = sample_tavily_response
-                mock_client_class.return_value = mock_client
+                mock_get_client.return_value = mock_client
 
                 result = tavily_search_tool.func(
                     runtime=mock_tool_runtime,
                     query="test",
                 )
 
-                # Verify TavilyClient was initialized with expanded env API key
-                mock_client_class.assert_called_once_with(api_key=mock_tavily_api_key)
+                # Verify get_tavily_client was called with expanded env API key
+                mock_get_client.assert_called_once_with(mock_tavily_api_key)
                 assert "## Search Results" in result
 
     def test_tavily_client_exception(
