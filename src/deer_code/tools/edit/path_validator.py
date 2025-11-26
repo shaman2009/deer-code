@@ -72,16 +72,34 @@ class PathValidator:
             )
 
         # Resolve to canonical path (this handles ../ and symlinks)
-        # If path doesn't exist and allow_nonexistent is True, resolve parent
+        # If path doesn't exist and allow_nonexistent is True, find an existing ancestor
         if not path.exists() and allow_nonexistent:
-            # Resolve parent directory and append the filename
+            # Walk up the directory tree to find an existing ancestor
+            current = path
+            parts_to_append = []
+
+            while not current.exists():
+                parts_to_append.insert(0, current.name)
+                current = current.parent
+
+                # If we've reached the root without finding an existing directory
+                if current == current.parent:
+                    raise PathValidationError(
+                        f"Cannot find existing ancestor directory for: {path}"
+                    )
+
+            # Resolve the existing ancestor
             try:
-                resolved_parent = path.parent.resolve(strict=True)
-                resolved_path = resolved_parent / path.name
+                resolved_ancestor = current.resolve(strict=True)
             except (FileNotFoundError, RuntimeError) as e:
                 raise PathValidationError(
-                    f"Parent directory does not exist: {path.parent}"
+                    f"Error resolving ancestor directory: {current}"
                 ) from e
+
+            # Build the full resolved path
+            resolved_path = resolved_ancestor
+            for part in parts_to_append:
+                resolved_path = resolved_path / part
         else:
             # Resolve the full path
             try:
@@ -89,14 +107,8 @@ class PathValidator:
             except (FileNotFoundError, RuntimeError) as e:
                 if not allow_nonexistent:
                     raise PathValidationError(f"Path does not exist: {path}") from e
-                # If allow_nonexistent, try resolving parent
-                try:
-                    resolved_parent = path.parent.resolve(strict=True)
-                    resolved_path = resolved_parent / path.name
-                except (FileNotFoundError, RuntimeError) as e2:
-                    raise PathValidationError(
-                        f"Parent directory does not exist: {path.parent}"
-                    ) from e2
+                # This shouldn't happen, but handle it anyway
+                raise PathValidationError(f"Error resolving path: {path}") from e
 
         # Check if path is within project root
         try:

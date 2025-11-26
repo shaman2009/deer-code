@@ -239,12 +239,16 @@ class TextEditor:
 
         Raises:
             ValueError: If file cannot be written.
+            PathValidationError: If path fails security validation.
         """
+        # Validate path for security (allow nonexistent for file creation)
+        validated_path = self.validate_path("create", path, allow_nonexistent=True)
+
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content)
+            validated_path.parent.mkdir(parents=True, exist_ok=True)
+            validated_path.write_text(content)
         except Exception as e:
-            raise ValueError(f"Error writing to {path}: {e}")
+            raise ValueError(f"Error writing to {validated_path}: {e}")
 
     def _content_with_line_numbers(
         self,

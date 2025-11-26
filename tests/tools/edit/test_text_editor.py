@@ -318,64 +318,85 @@ class TestTextEditorPathTraversal:
     """
     Test path traversal scenarios.
 
-    NOTE: These tests document CURRENT BEHAVIOR where path traversal is possible.
-    After implementing PathValidator in Week 2, these tests should be updated to
-    verify that traversals are BLOCKED.
+    These tests verify that PathValidator properly blocks path traversal attacks
+    and access to files outside the project root.
     """
 
-    def test_absolute_path_outside_project_currently_works(self, tmp_path, editor):
+    def test_absolute_path_outside_project_is_blocked(self, tmp_path):
         """
-        SECURITY ISSUE: Absolute paths outside project are currently allowed.
+        Test that absolute paths outside project root are blocked by PathValidator.
+        """
+        from deer_code.tools.edit.path_validator import PathValidationError
 
-        After Week 2 security fixes, this should raise a SecurityError.
-        """
+        # Create a project directory within tmp_path
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+
+        # Create an editor with project_dir as root
+        path_validator = PathValidator(project_root=project_dir)
+        editor = TextEditor(path_validator=path_validator)
+
         # Create a file outside the project directory
         outside_file = tmp_path / "outside_project.txt"
         outside_file.write_text("sensitive data")
 
-        # Currently this works - it's a security vulnerability
-        result = editor.view(outside_file)
-        assert "sensitive data" in result
-        # TODO: After security hardening, this should raise SecurityError
+        # This should now raise PathValidationError
+        with pytest.raises(PathValidationError, match="outside project root"):
+            editor.view(outside_file)
 
-    def test_parent_directory_traversal_currently_works(self, tmp_path, editor):
+    def test_parent_directory_traversal_is_blocked(self, tmp_path):
         """
-        SECURITY ISSUE: Parent directory traversal works with absolute paths.
+        Test that parent directory traversal is blocked by PathValidator.
+        """
+        from deer_code.tools.edit.path_validator import PathValidationError
 
-        After Week 2 security fixes, paths should be validated against project root.
-        """
         # Create directory structure
         project_dir = tmp_path / "project"
         project_dir.mkdir()
         outside_dir = tmp_path / "outside"
         outside_dir.mkdir()
 
+        # Create an editor with project_dir as root
+        path_validator = PathValidator(project_root=project_dir)
+        editor = TextEditor(path_validator=path_validator)
+
         secret_file = outside_dir / "secret.txt"
         secret_file.write_text("secret content")
 
-        # Currently allowed - should be blocked after security hardening
-        result = editor.view(secret_file)
-        assert "secret content" in result
-        # TODO: After security hardening, validate against project root
+        # This should be blocked by security validation
+        with pytest.raises(PathValidationError, match="outside project root"):
+            editor.view(secret_file)
 
-    def test_write_outside_project_currently_works(self, tmp_path, editor):
+    def test_write_outside_project_is_blocked(self, tmp_path):
         """
-        SECURITY ISSUE: Writing files outside project is currently allowed.
-
-        After Week 2 security fixes, this should be blocked.
+        Test that writing files outside project is blocked by PathValidator.
         """
-        outside_file = tmp_path / "outside" / "new_file.txt"
+        from deer_code.tools.edit.path_validator import PathValidationError
 
-        # Currently this creates directories and writes anywhere
-        editor.write_file(outside_file, "test content")
-        assert outside_file.exists()
-        assert outside_file.read_text() == "test content"
-        # TODO: After security hardening, should only allow within project
+        # Create a project directory within tmp_path
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+
+        # Create an editor with project_dir as root
+        path_validator = PathValidator(project_root=project_dir)
+        editor = TextEditor(path_validator=path_validator)
+
+        # Create parent directory outside the project
+        outside_dir = tmp_path / "outside"
+        outside_dir.mkdir()
+
+        # Try to write outside the project
+        outside_file = outside_dir / "new_file.txt"
+
+        # This should be blocked by security validation
+        with pytest.raises(PathValidationError, match="outside project root"):
+            editor.write_file(outside_file, "test content")
 
 
 class TestTextEditorErrorHandling:
     """Test error handling for various scenarios."""
 
+    @pytest.mark.skipif(os.getuid() == 0, reason="Permission tests don't work as root")
     def test_read_file_permission_error(self, tmp_path, editor):
         """Test reading file without read permissions."""
         test_file = tmp_path / "no_read.txt"
@@ -389,6 +410,7 @@ class TestTextEditorErrorHandling:
             # Restore permissions for cleanup
             test_file.chmod(0o644)
 
+    @pytest.mark.skipif(os.getuid() == 0, reason="Permission tests don't work as root")
     def test_write_file_to_readonly_parent(self, tmp_path, editor):
         """Test writing to file in readonly directory."""
         readonly_dir = tmp_path / "readonly"
