@@ -101,8 +101,12 @@ tools:
 
 ### Running the Application
 
-**Start deer-code:**
+**Start deer-code (CLI mode):**
 ```bash
+# Using the installed command (recommended)
+uv run deer-code "/path/to/your/developing/project"
+
+# Or using the module directly
 uv run -m deer_code.main "/path/to/your/developing/project"
 ```
 
@@ -116,6 +120,13 @@ make dev
 ```
 
 Now, open the browser and navigate to `https://agentchat.vercel.app/?apiUrl=http://localhost:2024&assistantId=coding_agent` to chat with the agent.
+
+**Build and Install:**
+```bash
+make build                 # Build the package
+pip install dist/*.whl     # Install locally
+deer-code "/path/to/your/developing/project"  # Run directly
+```
 
 ## 🌟 Features
 
@@ -149,7 +160,29 @@ Now, open the browser and navigate to `https://agentchat.vercel.app/?apiUrl=http
 - [x] **Flexible Configuration**: YAML-based config with environment variable expansion
 - [x] **Custom System Prompts**: Jinja2 template system for prompt customization
 - [x] **Ignore Patterns**: Smart filtering with 77+ default ignore patterns
-- [x] **Testing Support**: pytest-based test suite with coverage reporting
+- [x] **Security**: Built-in path traversal prevention and command injection protection
+
+### Testing
+- [x] **Comprehensive Test Suite**: pytest-based testing with markers (unit/integration)
+- [x] **Coverage Reporting**: HTML coverage reports with pytest-cov
+- [x] **Easy Testing**: Run `uv run pytest` or `make test` to execute all tests
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run with coverage report
+uv run pytest --cov=deer_code --cov-report=html
+
+# Run specific test types
+uv run pytest -m unit        # Unit tests only
+uv run pytest -m integration # Integration tests only
+
+# View coverage report
+open htmlcov/index.html      # After running with --cov-report=html
+```
 
 ## 🏗️ Architecture
 
@@ -300,8 +333,12 @@ tools:
 
 ### 运行应用
 
-**启动 deer-code：**
+**启动 deer-code（CLI 模式）：**
 ```bash
+# 使用已安装的命令（推荐）
+uv run deer-code "/path/to/your/developing/project"
+
+# 或者直接使用模块
 uv run -m deer_code.main "/path/to/your/developing/project"
 ```
 
@@ -315,6 +352,13 @@ make dev
 ```
 
 现在，打开浏览器访问 `https://agentchat.vercel.app/?apiUrl=http://localhost:2024&assistantId=coding_agent` 与智能体对话。
+
+**构建和安装：**
+```bash
+make build                 # 构建软件包
+pip install dist/*.whl     # 本地安装
+deer-code "/path/to/your/developing/project"  # 直接运行
+```
 
 ## 🌟 特性
 
@@ -348,7 +392,29 @@ make dev
 - [x] **灵活配置**：基于 YAML 的配置，支持环境变量展开
 - [x] **自定义系统提示**：Jinja2 模板系统用于提示词定制
 - [x] **忽略模式**：智能过滤，包含 77+ 默认忽略模式
-- [x] **测试支持**：基于 pytest 的测试套件，支持覆盖率报告
+- [x] **安全性**：内置路径遍历防护和命令注入保护
+
+### 测试
+- [x] **完善的测试套件**：基于 pytest 的测试，支持标记（单元测试/集成测试）
+- [x] **覆盖率报告**：通过 pytest-cov 生成 HTML 覆盖率报告
+- [x] **便捷测试**：运行 `uv run pytest` 或 `make test` 执行所有测试
+
+## 🧪 测试
+
+```bash
+# 运行所有测试
+uv run pytest
+
+# 运行并生成覆盖率报告
+uv run pytest --cov=deer_code --cov-report=html
+
+# 运行特定类型的测试
+uv run pytest -m unit        # 仅单元测试
+uv run pytest -m integration # 仅集成测试
+
+# 查看覆盖率报告
+open htmlcov/index.html      # 在使用 --cov-report=html 后
+```
 
 ## 🏗️ 架构
 
